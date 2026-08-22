@@ -1876,7 +1876,10 @@
     }, fields);
     data.createdAt = Date.now();
     data.createdAtLabel = fmtNow();
-    return db.collection("customers").add(data);
+    return db.collection("customers").add(data).catch(function(err){
+      showToast("新增客戶失敗，請檢查網路連線或資料庫權限設定");
+      throw err;
+    });
   }
   function updateCustomerDoc(id, patch){
     if(isReadonly || !db) return;
@@ -1921,7 +1924,10 @@
     if(isReadonly || !db){ showToast("尚未連接資料庫，暫時無法儲存"); return Promise.reject(); }
     var data = Object.assign({ name:"", role:"staff", username:"", password:"" }, fields);
     data.createdAt = Date.now();
-    return db.collection("accounts").add(data);
+    return db.collection("accounts").add(data).catch(function(err){
+      showToast("新增帳號失敗，請檢查網路連線或資料庫權限設定");
+      throw err;
+    });
   }
   function updateAccountDoc(id, patch){
     if(isReadonly || !db) return;
@@ -1948,7 +1954,10 @@
     }, fields);
     data.createdAt = Date.now();
     data.createdAtLabel = fmtNow();
-    return db.collection("orders").add(data);
+    return db.collection("orders").add(data).catch(function(err){
+      showToast("新增訂單失敗，請檢查網路連線或資料庫權限設定");
+      throw err;
+    });
   }
   function updateOrderDoc(id, patch){
     if(isReadonly || !db) return;
