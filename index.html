@@ -1891,20 +1891,29 @@
     });
   }
   function createStaffDoc(name){
-    if(isReadonly || !db){ showToast("尚未連接資料庫，暫時無法儲存"); return; }
-    db.collection("staff").add({ name:name, commissionRate:0, createdAt:Date.now() });
+    if(isReadonly || !db){ showToast("尚未連接資料庫，暫時無法儲存"); return Promise.reject(); }
+    return db.collection("staff").add({ name:name, commissionRate:0, createdAt:Date.now() }).catch(function(err){
+      showToast("新增同仁失敗，請檢查網路連線或資料庫權限設定");
+      throw err;
+    });
   }
   function updateStaffDoc(id, name){
     if(isReadonly || !db) return;
-    db.collection("staff").doc(id).update({ name:name }).catch(function(){});
+    db.collection("staff").doc(id).update({ name:name }).catch(function(){
+      showToast("儲存失敗，請檢查網路連線");
+    });
   }
   function updateStaffCommission(id, rate){
     if(isReadonly || !db) return;
-    db.collection("staff").doc(id).update({ commissionRate: rate }).catch(function(){});
+    db.collection("staff").doc(id).update({ commissionRate: rate }).catch(function(){
+      showToast("儲存失敗，請檢查網路連線");
+    });
   }
   function deleteStaffDoc(id){
     if(isReadonly || !db) return;
-    db.collection("staff").doc(id)["delete"]().catch(function(){});
+    db.collection("staff").doc(id)["delete"]().catch(function(){
+      showToast("刪除失敗，請檢查網路連線");
+    });
   }
 
   /* ---------------- 帳號（權限管理）：Firestore 讀寫 ---------------- */
@@ -2434,8 +2443,6 @@
     var o = ordersData.filter(function(x){ return x.id === orderId; })[0];
     if(!o){ showToast("找不到這筆訂單"); return; }
     if(overrideData){ o = Object.assign({}, o, overrideData); }
-    var win = window.open("", "_blank");
-    if(!win){ showToast("瀏覽器擋下了新視窗，請允許本頁的彈出視窗後再試一次"); return; }
     function pad(n){ return String(n).padStart(2,"0"); }
     var today = new Date();
     var todayLabel = today.getFullYear() + "/" + pad(today.getMonth()+1) + "/" + pad(today.getDate());
@@ -2504,9 +2511,13 @@
       + "<div class=\"sign-box\"><div class=\"sign-line\"></div><div class=\"sign-label\">主管簽核　　　日期：＿＿＿＿＿＿</div></div>"
       + "</div>"
       + "</body></html>";
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+    /* 用 Blob URL 開新視窗，避免部分瀏覽器（尤其 Safari）對 window.open("") 之後
+       再用 document.write 寫入內容的時機處理不穩定，導致列印出來是空白頁。 */
+    var blob = new Blob([html], { type: "text/html" });
+    var blobUrl = URL.createObjectURL(blob);
+    var win = window.open(blobUrl, "_blank");
+    if(!win){ showToast("瀏覽器擋下了新視窗，請允許本頁的彈出視窗後再試一次"); URL.revokeObjectURL(blobUrl); return; }
+    setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
   }
 
   function updateOrderSummary(el, data){
@@ -3835,9 +3846,16 @@
     var input = document.getElementById("newStaffInput");
     var name = input.value.trim();
     if(!name) return;
-    createStaffDoc(name);
-    input.value = "";
-    showToast("已新增同仁「" + name + "」");
+    input.disabled = true;
+    createStaffDoc(name).then(function(){
+      input.value = "";
+      showToast("已新增同仁「" + name + "」");
+    }, function(){
+      /* 失敗時 createStaffDoc 已經顯示錯誤訊息，這裡保留使用者剛剛打的名字，不清空輸入框 */
+    }).then(function(){
+      input.disabled = false;
+      input.focus();
+    });
   }
 
   /* ---------------- local: stats / filters / bars ---------------- */
