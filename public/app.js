@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  var BRANDS = ["Resmo","Pickme","Giorgio Graesan","沙發大師","睡眠王國","浴室整體規劃改造","Sigmas","震旦"];
+  var BRANDS = ["Resmo","Pickme","Giorgio Graesan","沙發大師","睡眠王國","浴室整體規劃改造","Sigmas","震旦","順銘藝術塗裝"];
   var SLOTS = ["10:00–12:00","13:00–15:00","15:00–17:00","17:00–19:00"];
   var STATUSES = [
     {key:"scheduled", label:"已預約", color:"var(--brass)"},
@@ -1796,7 +1796,7 @@
   var ADMIN_VIEWS = ["orders","permissions"];
   var VIEW_TITLES = {
     calendar: { title:"展間預約行事曆", subtitle:"依日期檢視客人的預約與到訪安排" },
-    customers: { title:"台中綜合展間管理系統", subtitle:"Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦" },
+    customers: { title:"台中綜合展間管理系統", subtitle:"Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦・順銘藝術塗裝" },
     byBrand: { title:"各品牌客戶", subtitle:"選擇品牌，只看該品牌感興趣的客戶" },
     orders: { title:"案件管理", subtitle:"訂單／工程財務資料，含成本、毛利與業務抽成，僅管理員可見" },
     staff: { title:"業務管理", subtitle:"管理可指派的負責人員名單；抽成比例僅管理員看得到" },
