@@ -10,16 +10,36 @@ router.get('/', requireLogin, (req, res) => {
 });
 
 router.post('/', requireLogin, (req, res) => {
-  const name = (req.body && req.body.name || '').trim();
+  const f = req.body || {};
+  const name = (f.name || '').trim();
   if (!name) return res.status(400).json({ error: '請輸入姓名' });
   const id = uid('staff');
-  db.prepare('INSERT INTO staff (id, name, commissionRate, createdAt) VALUES (?, ?, 0, ?)').run(id, name, Date.now());
+  const commissionRate = (f.commissionRate === undefined || f.commissionRate === null || f.commissionRate === '')
+    ? 0 : (Number(f.commissionRate) || 0);
+  db.prepare(
+    `INSERT INTO staff (id, name, commissionRate, brand, supervisor, department, createdAt)
+     VALUES (@id, @name, @commissionRate, @brand, @supervisor, @department, @createdAt)`
+  ).run({
+    id, name, commissionRate,
+    brand: f.brand || '', supervisor: f.supervisor || '', department: f.department || '',
+    createdAt: Date.now()
+  });
   res.status(201).json(db.prepare('SELECT * FROM staff WHERE id = ?').get(id));
 });
 
 router.patch('/:id', requireLogin, (req, res) => {
-  const name = (req.body && req.body.name || '').trim();
-  db.prepare('UPDATE staff SET name = ? WHERE id = ?').run(name, req.params.id);
+  const existing = db.prepare('SELECT * FROM staff WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: '找不到這位同仁' });
+  const patch = req.body || {};
+  const merged = Object.assign({}, existing, patch);
+  if ('name' in patch) merged.name = (patch.name || '').trim();
+  const params = {
+    id: merged.id, name: merged.name,
+    brand: merged.brand || '', supervisor: merged.supervisor || '', department: merged.department || ''
+  };
+  db.prepare(
+    'UPDATE staff SET name=@name, brand=@brand, supervisor=@supervisor, department=@department WHERE id=@id'
+  ).run(params);
   res.json(db.prepare('SELECT * FROM staff WHERE id = ?').get(req.params.id));
 });
 

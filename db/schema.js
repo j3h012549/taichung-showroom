@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS staff (
   id TEXT PRIMARY KEY,
   name TEXT DEFAULT '',
   commissionRate REAL DEFAULT 0,
+  brand TEXT DEFAULT '',
+  supervisor TEXT DEFAULT '',
+  department TEXT DEFAULT '',
   createdAt INTEGER
 );
 
@@ -54,5 +57,12 @@ CREATE TABLE IF NOT EXISTS accounts (
   createdAt INTEGER
 );
 `);
+
+/* 升級用：如果是舊版本已經在用的資料庫（staff 資料表已經存在、但還沒有這幾欄），
+   用 ALTER TABLE 補上欄位。新安裝的資料庫因為上面 CREATE TABLE 已經包含這些欄位，
+   這裡會直接因為欄位已存在而失敗，用 try/catch 忽略即可。 */
+['brand', 'supervisor', 'department'].forEach(function(col){
+  try { db.exec("ALTER TABLE staff ADD COLUMN " + col + " TEXT DEFAULT ''"); } catch (e) { /* 欄位已存在，略過 */ }
+});
 
 module.exports = db;

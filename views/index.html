@@ -323,8 +323,7 @@
         <p class="staff-empty" id="staffEmpty">尚未建立同仁名單，請於下方新增。</p>
         <ul class="staff-list" id="staffList"></ul>
         <div class="add-staff-form">
-          <input type="text" id="newStaffInput" placeholder="輸入同仁姓名，按 Enter 或新增">
-          <button type="button" id="addStaffBtn">新增同仁</button>
+          <button type="button" id="addStaffBtn">＋ 新增業務</button>
         </div>
       </div>
     </section>
@@ -404,6 +403,96 @@
     <div class="quote-modal-foot">
       <button type="button" class="quote-modal-print" id="quoteModalPrintBtn">列印／另存為 PDF</button>
       <button type="button" class="quote-modal-done" id="quoteModalDoneBtn">完成</button>
+    </div>
+  </div>
+</div>
+
+<div class="quote-modal-overlay" id="orderAddModalOverlay">
+  <div class="quote-modal-box order-add-modal-box">
+    <div class="quote-modal-head">
+      <div><h3>新增訂單</h3></div>
+      <button type="button" class="quote-modal-close" id="orderAddModalCloseBtn" aria-label="關閉">&times;</button>
+    </div>
+    <div class="quote-modal-body">
+      <div class="modal-form-row">
+        <label class="modal-form-label" for="orderAddName">客戶姓名</label>
+        <input type="text" id="orderAddName" class="modal-form-input" placeholder="客戶姓名">
+      </div>
+      <div class="modal-form-row">
+        <label class="modal-form-label" for="orderAddBrand">品牌</label>
+        <select id="orderAddBrand" class="modal-form-input"></select>
+      </div>
+      <div class="modal-form-row">
+        <label class="modal-form-label" for="orderAddStaff">負責業務</label>
+        <select id="orderAddStaff" class="modal-form-input"></select>
+      </div>
+      <div class="modal-form-row-split">
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="orderAddDate">成交日期</label>
+          <input type="date" id="orderAddDate" class="modal-form-input">
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="orderAddTotal">總價</label>
+          <input type="number" id="orderAddTotal" class="modal-form-input" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-form-row-split">
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="orderAddCost">成本（選填）</label>
+          <input type="number" id="orderAddCost" class="modal-form-input" min="0" placeholder="未填">
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="orderAddRate">應付抽成 %（選填）</label>
+          <input type="number" id="orderAddRate" class="modal-form-input" min="0" max="100" step="0.1" placeholder="預設帶入業務抽成">
+        </div>
+      </div>
+      <div class="modal-form-row">
+        <label class="modal-form-label" for="orderAddNotes">備註（選填）</label>
+        <input type="text" id="orderAddNotes" class="modal-form-input" placeholder="備註">
+      </div>
+    </div>
+    <div class="quote-modal-foot">
+      <button type="button" class="quote-modal-print" id="orderAddCancelBtn">取消</button>
+      <button type="button" class="quote-modal-done" id="orderAddSubmitBtn">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="quote-modal-overlay" id="staffAddModalOverlay">
+  <div class="quote-modal-box order-add-modal-box">
+    <div class="quote-modal-head">
+      <div><h3>新增業務</h3></div>
+      <button type="button" class="quote-modal-close" id="staffAddModalCloseBtn" aria-label="關閉">&times;</button>
+    </div>
+    <div class="quote-modal-body">
+      <div class="modal-form-row">
+        <label class="modal-form-label" for="staffAddName">姓名</label>
+        <input type="text" id="staffAddName" class="modal-form-input" placeholder="輸入同仁姓名">
+      </div>
+      <div class="modal-form-row-split">
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="staffAddBrand">負責品牌</label>
+          <select id="staffAddBrand" class="modal-form-input"></select>
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="staffAddRate">抽成 %</label>
+          <input type="number" id="staffAddRate" class="modal-form-input" min="0" max="100" step="0.1" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-form-row-split">
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="staffAddSupervisor">主管</label>
+          <input type="text" id="staffAddSupervisor" class="modal-form-input" placeholder="主管姓名">
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-form-label" for="staffAddDepartment">隸屬單位</label>
+          <input type="text" id="staffAddDepartment" class="modal-form-input" placeholder="例如：業務部">
+        </div>
+      </div>
+    </div>
+    <div class="quote-modal-foot">
+      <button type="button" class="quote-modal-print" id="staffAddCancelBtn">取消</button>
+      <button type="button" class="quote-modal-done" id="staffAddSubmitBtn">新增</button>
     </div>
   </div>
 </div>

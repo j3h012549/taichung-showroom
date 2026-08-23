@@ -369,6 +369,14 @@
   }
   .staff-chip .remove-staff:hover{ background:var(--critical-soft); color:var(--critical); }
   .staff-chip .remove-staff svg{ width:12px; height:12px; }
+  .staff-chip select.staff-brand{
+    border:1px solid var(--line); background:var(--surface); border-radius:999px;
+    font-size:12px; padding:3px 6px; color:var(--ink-soft); max-width:110px;
+  }
+  .staff-chip input.staff-supervisor, .staff-chip input.staff-department{
+    border:1px solid var(--line); background:var(--surface); border-radius:999px;
+    font-size:12px; padding:3px 8px; color:var(--ink-soft); width:8ch; min-width:6ch;
+  }
   .staff-empty{ color:var(--ink-faint); font-size:13px; margin:0 0 12px; }
 
   .add-staff-form{
@@ -1240,6 +1248,21 @@
     border-radius:10px; padding:9px 18px; font-size:13px; font-weight:700;
   }
   @media (max-width:600px){ .quote-modal-box{ max-height:94vh; } }
+
+  /* ---------- 表單型彈出視窗（新增訂單等） ---------- */
+  .order-add-modal-box{ max-width:480px; }
+  .modal-form-row{ margin-bottom:14px; }
+  .modal-form-row-split{ display:flex; gap:14px; }
+  .modal-form-row-split .modal-form-row{ flex:1; min-width:0; }
+  .modal-form-label{
+    display:block; font-size:12.5px; color:var(--ink-faint); font-weight:600; margin-bottom:5px;
+  }
+  .modal-form-input{
+    width:100%; box-sizing:border-box; border:1px solid var(--line); background:var(--surface-2);
+    border-radius:8px; padding:9px 11px; font-size:13.5px; color:var(--ink); font-family:inherit;
+  }
+  .modal-form-input:hover, .modal-form-input:focus{ border-color:var(--line-strong); background:var(--surface); }
+  select.modal-form-input{ appearance:auto; }
 
   /* ---------- report tables ---------- */
   .report-table{ width:100%; border-collapse:collapse; font-size:12.5px; }

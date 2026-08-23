@@ -67,6 +67,17 @@
     };
   }
 
+  /* 找出目前使用者正在編輯（focus）中的那個列表項目節點（tbody/li/tr）。
+     每次背景輪詢重新整理清單時，把這個節點原地保留、不搬動它，
+     因為把一個仍持有焦點的節點搬動位置（即使內容沒變）會讓瀏覽器自動觸發失焦，
+     使用者打字打到一半就會被中斷、甚至看起來像是內容被清空。其餘沒有在編輯中的項目照常搬動排序。 */
+  function findActiveItemNode(container, itemSelector){
+    var active = document.activeElement;
+    if(!active || !container || !container.contains(active)) return null;
+    var node = active.closest ? active.closest(itemSelector) : null;
+    return (node && node.parentNode === container) ? node : null;
+  }
+
   function showToast(msg){
     var t = document.getElementById("toast");
     t.textContent = msg;
@@ -235,9 +246,10 @@
       showToast("刪除失敗，請檢查網路連線");
     });
   }
-  function createStaffDoc(name){
+  function createStaffDoc(fields){
     if(isReadonly){ showToast("尚未連接伺服器，暫時無法儲存"); return Promise.reject(); }
-    return apiFetch("/api/staff", { method:"POST", body:{ name:name } }).then(function(row){
+    var body = (typeof fields === "string") ? { name: fields } : (fields || {});
+    return apiFetch("/api/staff", { method:"POST", body: body }).then(function(row){
       loadStaff();
       return row;
     }, function(err){
@@ -245,9 +257,10 @@
       throw err;
     });
   }
-  function updateStaffDoc(id, name){
+  function updateStaffDoc(id, patch){
     if(isReadonly) return;
-    apiFetch("/api/staff/" + id, { method:"PATCH", body:{ name:name } }).then(function(){
+    var body = (typeof patch === "string") ? { name: patch } : (patch || {});
+    apiFetch("/api/staff/" + id, { method:"PATCH", body: body }).then(function(){
       loadStaff();
     }, function(){
       showToast("儲存失敗，請檢查網路連線");
@@ -604,15 +617,27 @@
     var list = document.getElementById("customerList");
     var existing = {};
     Array.prototype.forEach.call(list.children, function(li){ existing[li.dataset.key] = li; });
+    var activeItem = findActiveItemNode(list, "[data-key]");
     var frag = document.createDocumentFragment();
     customersData.forEach(function(c){
       var li = existing[c.id];
-      if(li){ patchCustomerCard(li, c); delete existing[c.id]; }
-      else{ li = buildCustomerCard(c); }
+      if(li){
+        patchCustomerCard(li, c);
+        delete existing[c.id];
+        if(li === activeItem) return; // 正在編輯中的這一張先保留原位，不搬動
+      } else {
+        li = buildCustomerCard(c);
+      }
       frag.appendChild(li);
     });
-    list.innerHTML = "";
-    list.appendChild(frag);
+    Object.keys(existing).forEach(function(id){
+      if(existing[id] !== activeItem){ existing[id].remove(); }
+    });
+    if(activeItem && activeItem.parentNode === list){
+      list.insertBefore(frag, activeItem.nextSibling);
+    } else {
+      list.appendChild(frag);
+    }
     applyFilters();
     updateEmptyState();
   }
@@ -1466,15 +1491,27 @@
     Array.prototype.forEach.call(table.children, function(el){
       if(el.tagName === "TBODY" && el.dataset.key){ existing[el.dataset.key] = el; }
     });
+    var activeItem = findActiveItemNode(table, "tbody[data-key]");
     var frag = document.createDocumentFragment();
     ordersData.forEach(function(o){
       var grp = existing[o.id];
-      if(grp){ patchOrderRow(grp, o); delete existing[o.id]; }
-      else{ grp = buildOrderRow(o); }
+      if(grp){
+        patchOrderRow(grp, o);
+        delete existing[o.id];
+        if(grp === activeItem) return; // 正在編輯中的這一列先保留原位，不搬動
+      } else {
+        grp = buildOrderRow(o);
+      }
       frag.appendChild(grp);
     });
-    Object.keys(existing).forEach(function(id){ existing[id].remove(); });
-    table.appendChild(frag);
+    Object.keys(existing).forEach(function(id){
+      if(existing[id] !== activeItem){ existing[id].remove(); }
+    });
+    if(activeItem && activeItem.parentNode === table){
+      table.insertBefore(frag, activeItem.nextSibling);
+    } else {
+      table.appendChild(frag);
+    }
     applyOrderFilters();
     document.getElementById("orderEmptyState").style.display = ordersData.length === 0 ? "block" : "none";
     refreshQuoteModalIfOpen();
@@ -1491,13 +1528,79 @@
        避免伺服器回寫延遲把使用者正在輸入、還沒送達伺服器的內容蓋掉。 */
   }
 
-  function addOrder(){
-    createOrderDoc({ dealDate: todayISO() }).then(function(ref){
-      setTimeout(function(){
-        var input = document.querySelector('#orderList tbody[data-key="'+ref.id+'"] .order-cust-name');
-        if(input){ input.focus(); }
-      }, 120);
-    }, function(){ /* createOrderDoc already toasted */ });
+  /* ---------------- 新增訂單彈出視窗 ---------------- */
+  function populateOrderAddSelects(){
+    var brandSel = document.getElementById("orderAddBrand");
+    brandSel.innerHTML = "";
+    var phBrand = document.createElement("option"); phBrand.value = ""; phBrand.textContent = "（選擇品牌）";
+    brandSel.appendChild(phBrand);
+    BRANDS.forEach(function(b){
+      var o = document.createElement("option"); o.value = b; o.textContent = b;
+      brandSel.appendChild(o);
+    });
+
+    var staffSel = document.getElementById("orderAddStaff");
+    staffSel.innerHTML = "";
+    var phStaff = document.createElement("option"); phStaff.value = ""; phStaff.textContent = "（選擇業務）";
+    staffSel.appendChild(phStaff);
+    staffData.forEach(function(s){
+      var o = document.createElement("option"); o.value = s.id; o.textContent = s.name;
+      staffSel.appendChild(o);
+    });
+  }
+
+  function openOrderAddModal(){
+    if(isReadonly){ showToast("尚未連接伺服器，暫時無法新增"); return; }
+    populateOrderAddSelects();
+    document.getElementById("orderAddName").value = "";
+    document.getElementById("orderAddBrand").value = "";
+    document.getElementById("orderAddStaff").value = "";
+    document.getElementById("orderAddDate").value = todayISO();
+    document.getElementById("orderAddTotal").value = "";
+    document.getElementById("orderAddCost").value = "";
+    document.getElementById("orderAddRate").value = "";
+    document.getElementById("orderAddNotes").value = "";
+    document.getElementById("orderAddModalOverlay").classList.add("open");
+    setTimeout(function(){ document.getElementById("orderAddName").focus(); }, 60);
+  }
+
+  function closeOrderAddModal(){
+    document.getElementById("orderAddModalOverlay").classList.remove("open");
+  }
+
+  function submitOrderAddModal(){
+    var name = document.getElementById("orderAddName").value.trim();
+    var brand = document.getElementById("orderAddBrand").value;
+    var staffId = document.getElementById("orderAddStaff").value;
+    var staff = staffData.filter(function(s){ return s.id === staffId; })[0];
+    var dealDate = document.getElementById("orderAddDate").value || todayISO();
+    var totalRaw = document.getElementById("orderAddTotal").value;
+    var costRaw = document.getElementById("orderAddCost").value;
+    var rateRaw = document.getElementById("orderAddRate").value;
+    var notes = document.getElementById("orderAddNotes").value.trim();
+
+    var fields = {
+      customerName: name,
+      brand: brand,
+      staffId: staffId,
+      staffName: staff ? staff.name : "",
+      dealDate: dealDate,
+      totalPrice: totalRaw === "" ? 0 : (parseFloat(totalRaw) || 0),
+      cost: costRaw === "" ? null : (parseFloat(costRaw) || 0),
+      commissionRate: rateRaw === "" ? (staffId ? getStaffRate(staffId) : null) : (parseFloat(rateRaw) || 0),
+      notes: notes
+    };
+
+    var submitBtn = document.getElementById("orderAddSubmitBtn");
+    submitBtn.disabled = true;
+    createOrderDoc(fields).then(function(){
+      submitBtn.disabled = false;
+      closeOrderAddModal();
+      showToast("已新增訂單");
+    }, function(){
+      submitBtn.disabled = false;
+      /* createOrderDoc 已經跳過失敗訊息 */
+    });
   }
 
   /* ---------------- 訂單篩選／統計／報表 ---------------- */
@@ -1885,15 +1988,27 @@
     if(!tbody) return;
     var existing = {};
     Array.prototype.forEach.call(tbody.children, function(tr){ existing[tr.dataset.key] = tr; });
+    var activeItem = findActiveItemNode(tbody, "[data-key]");
     var frag = document.createDocumentFragment();
     accountsData.forEach(function(a){
       var tr = existing[a.id];
-      if(tr){ patchAccountRow(tr, a); delete existing[a.id]; }
-      else{ tr = buildAccountRow(a); }
+      if(tr){
+        patchAccountRow(tr, a);
+        delete existing[a.id];
+        if(tr === activeItem) return; // 正在編輯中的這一列先保留原位，不搬動
+      } else {
+        tr = buildAccountRow(a);
+      }
       frag.appendChild(tr);
     });
-    Object.keys(existing).forEach(function(id){ existing[id].remove(); });
-    tbody.appendChild(frag);
+    Object.keys(existing).forEach(function(id){
+      if(existing[id] !== activeItem){ existing[id].remove(); }
+    });
+    if(activeItem && activeItem.parentNode === tbody){
+      tbody.insertBefore(frag, activeItem.nextSibling);
+    } else {
+      tbody.appendChild(frag);
+    }
     var empty = document.getElementById("accountEmpty");
     if(empty){ empty.style.display = accountsData.length === 0 ? "block" : "none"; }
   }
@@ -2094,7 +2209,8 @@
     return staffData.map(function(s){ return s.name; }).filter(Boolean);
   }
 
-  function buildStaffChip(id, name, commissionRate){
+  function buildStaffChip(s){
+    var id = s.id, name = s.name || "";
     var li = document.createElement("li");
     li.className = "staff-chip";
     li.dataset.key = id;
@@ -2103,12 +2219,41 @@
     input.size = Math.max(2, name.length);
     var saveStaffName = debounce(function(){
       input.size = Math.max(2, input.value.length);
-      updateStaffDoc(id, input.value.trim());
+      updateStaffDoc(id, { name: input.value.trim() });
       recomputeAll();
     }, 500);
     input.addEventListener("input", saveStaffName);
-    input.addEventListener("blur", function(){ updateStaffDoc(id, input.value.trim()); });
+    input.addEventListener("blur", function(){ updateStaffDoc(id, { name: input.value.trim() }); });
     li.appendChild(input);
+
+    var brandSelect = document.createElement("select");
+    brandSelect.className = "staff-brand";
+    brandSelect.title = "負責品牌";
+    var phBrand = document.createElement("option"); phBrand.value = ""; phBrand.textContent = "（品牌）";
+    brandSelect.appendChild(phBrand);
+    BRANDS.forEach(function(b){
+      var o = document.createElement("option"); o.value = b; o.textContent = b;
+      if(b === (s.brand || "")){ o.selected = true; }
+      brandSelect.appendChild(o);
+    });
+    brandSelect.addEventListener("change", function(){ updateStaffDoc(id, { brand: brandSelect.value }); });
+    li.appendChild(brandSelect);
+
+    var supervisorInput = document.createElement("input");
+    supervisorInput.type = "text"; supervisorInput.className = "staff-supervisor"; supervisorInput.placeholder = "主管";
+    supervisorInput.value = s.supervisor || "";
+    var saveSupervisor = debounce(function(){ updateStaffDoc(id, { supervisor: supervisorInput.value.trim() }); }, 500);
+    supervisorInput.addEventListener("input", saveSupervisor);
+    supervisorInput.addEventListener("blur", function(){ updateStaffDoc(id, { supervisor: supervisorInput.value.trim() }); });
+    li.appendChild(supervisorInput);
+
+    var departmentInput = document.createElement("input");
+    departmentInput.type = "text"; departmentInput.className = "staff-department"; departmentInput.placeholder = "隸屬單位";
+    departmentInput.value = s.department || "";
+    var saveDepartment = debounce(function(){ updateStaffDoc(id, { department: departmentInput.value.trim() }); }, 500);
+    departmentInput.addEventListener("input", saveDepartment);
+    departmentInput.addEventListener("blur", function(){ updateStaffDoc(id, { department: departmentInput.value.trim() }); });
+    li.appendChild(departmentInput);
 
     var pct = document.createElement("span");
     pct.className = "commission-pct";
@@ -2116,7 +2261,7 @@
     li.appendChild(pct);
     var rate = document.createElement("input");
     rate.type = "number"; rate.className = "commission-input"; rate.min = "0"; rate.max = "100"; rate.step = "0.1";
-    rate.value = commissionRate || 0;
+    rate.value = s.commissionRate || 0;
     rate.title = "抽成比例（%）";
     var saveRate = debounce(function(){
       var v = parseFloat(rate.value); if(isNaN(v) || v < 0) v = 0;
@@ -2146,6 +2291,7 @@
     var list = document.getElementById("staffList");
     var existing = {};
     Array.prototype.forEach.call(list.children, function(li){ existing[li.dataset.key] = li; });
+    var activeItem = findActiveItemNode(list, "[data-key]");
     var frag = document.createDocumentFragment();
     staffData.forEach(function(s){
       var li = existing[s.id];
@@ -2159,31 +2305,87 @@
         if(document.activeElement !== rateInput && parseFloat(rateInput.value) !== (s.commissionRate || 0)){
           rateInput.value = s.commissionRate || 0;
         }
+        var brandSelect = li.querySelector(".staff-brand");
+        if(brandSelect && document.activeElement !== brandSelect && brandSelect.value !== (s.brand || "")){
+          brandSelect.value = s.brand || "";
+        }
+        var supervisorInput = li.querySelector(".staff-supervisor");
+        if(supervisorInput && document.activeElement !== supervisorInput && supervisorInput.value !== (s.supervisor || "")){
+          supervisorInput.value = s.supervisor || "";
+        }
+        var departmentInput = li.querySelector(".staff-department");
+        if(departmentInput && document.activeElement !== departmentInput && departmentInput.value !== (s.department || "")){
+          departmentInput.value = s.department || "";
+        }
         delete existing[s.id];
+        if(li === activeItem) return; // 正在編輯中的這一張先保留原位，不搬動
       } else {
-        li = buildStaffChip(s.id, s.name, s.commissionRate || 0);
+        li = buildStaffChip(s);
       }
       frag.appendChild(li);
     });
-    list.innerHTML = "";
-    list.appendChild(frag);
+    Object.keys(existing).forEach(function(id){
+      if(existing[id] !== activeItem){ existing[id].remove(); }
+    });
+    if(activeItem && activeItem.parentNode === list){
+      list.insertBefore(frag, activeItem.nextSibling);
+    } else {
+      list.appendChild(frag);
+    }
     updateStaffEmptyState();
   }
 
-  function addStaff(){
-    if(isReadonly) return;
-    var input = document.getElementById("newStaffInput");
-    var name = input.value.trim();
-    if(!name) return;
-    input.disabled = true;
-    createStaffDoc(name).then(function(){
-      input.value = "";
+  /* ---------------- 新增業務彈出視窗 ---------------- */
+  function populateStaffAddBrandSelect(){
+    var sel = document.getElementById("staffAddBrand");
+    sel.innerHTML = "";
+    var ph = document.createElement("option"); ph.value = ""; ph.textContent = "（選擇品牌）";
+    sel.appendChild(ph);
+    BRANDS.forEach(function(b){
+      var o = document.createElement("option"); o.value = b; o.textContent = b;
+      sel.appendChild(o);
+    });
+  }
+
+  function openStaffAddModal(){
+    if(isReadonly){ showToast("尚未連接伺服器，暫時無法新增"); return; }
+    populateStaffAddBrandSelect();
+    document.getElementById("staffAddName").value = "";
+    document.getElementById("staffAddBrand").value = "";
+    document.getElementById("staffAddRate").value = "";
+    document.getElementById("staffAddSupervisor").value = "";
+    document.getElementById("staffAddDepartment").value = "";
+    document.getElementById("staffAddModalOverlay").classList.add("open");
+    setTimeout(function(){ document.getElementById("staffAddName").focus(); }, 60);
+  }
+
+  function closeStaffAddModal(){
+    document.getElementById("staffAddModalOverlay").classList.remove("open");
+  }
+
+  function submitStaffAddModal(){
+    var name = document.getElementById("staffAddName").value.trim();
+    if(!name){ showToast("請輸入姓名"); return; }
+    var brand = document.getElementById("staffAddBrand").value;
+    var rateRaw = document.getElementById("staffAddRate").value;
+    var supervisor = document.getElementById("staffAddSupervisor").value.trim();
+    var department = document.getElementById("staffAddDepartment").value.trim();
+
+    var fields = {
+      name: name, brand: brand,
+      commissionRate: rateRaw === "" ? 0 : (parseFloat(rateRaw) || 0),
+      supervisor: supervisor, department: department
+    };
+
+    var submitBtn = document.getElementById("staffAddSubmitBtn");
+    submitBtn.disabled = true;
+    createStaffDoc(fields).then(function(){
+      submitBtn.disabled = false;
+      closeStaffAddModal();
       showToast("已新增同仁「" + name + "」");
     }, function(){
-      /* 失敗時 createStaffDoc 已經顯示錯誤訊息，這裡保留使用者剛剛打的名字，不清空輸入框 */
-    }).then(function(){
-      input.disabled = false;
-      input.focus();
+      submitBtn.disabled = false;
+      /* createStaffDoc 已經顯示錯誤訊息 */
     });
   }
 
@@ -2335,9 +2537,17 @@
   /* ---------------- wiring ---------------- */
   function init(){
     document.getElementById("btnAddCustomer").addEventListener("click", addCustomer);
-    document.getElementById("addStaffBtn").addEventListener("click", addStaff);
-    document.getElementById("newStaffInput").addEventListener("keydown", function(e){
-      if(e.key === "Enter"){ e.preventDefault(); addStaff(); }
+    document.getElementById("addStaffBtn").addEventListener("click", openStaffAddModal);
+
+    /* 新增業務彈出視窗 wiring */
+    document.getElementById("staffAddModalCloseBtn").addEventListener("click", closeStaffAddModal);
+    document.getElementById("staffAddCancelBtn").addEventListener("click", closeStaffAddModal);
+    document.getElementById("staffAddSubmitBtn").addEventListener("click", submitStaffAddModal);
+    document.getElementById("staffAddModalOverlay").addEventListener("click", function(e){
+      if(e.target === document.getElementById("staffAddModalOverlay")){ closeStaffAddModal(); }
+    });
+    document.getElementById("staffAddName").addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); submitStaffAddModal(); }
     });
     document.getElementById("searchInput").addEventListener("input", function(e){
       localFilter.text = e.target.value;
@@ -2422,7 +2632,18 @@
     });
     document.getElementById("adminGateCancel").addEventListener("click", closeAdminGate);
     document.getElementById("btnAdminLogout").addEventListener("click", logoutAdmin);
-    document.getElementById("btnAddOrder").addEventListener("click", addOrder);
+    document.getElementById("btnAddOrder").addEventListener("click", openOrderAddModal);
+
+    /* 新增訂單彈出視窗 wiring */
+    document.getElementById("orderAddModalCloseBtn").addEventListener("click", closeOrderAddModal);
+    document.getElementById("orderAddCancelBtn").addEventListener("click", closeOrderAddModal);
+    document.getElementById("orderAddSubmitBtn").addEventListener("click", submitOrderAddModal);
+    document.getElementById("orderAddModalOverlay").addEventListener("click", function(e){
+      if(e.target === document.getElementById("orderAddModalOverlay")){ closeOrderAddModal(); }
+    });
+    document.getElementById("orderAddName").addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); submitOrderAddModal(); }
+    });
 
     /* 報價單編輯彈出視窗 wiring */
     document.getElementById("quoteModalCloseBtn").addEventListener("click", closeQuoteEditModal);
