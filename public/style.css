@@ -1286,9 +1286,11 @@
      不會再有「時機沒抓好」導致空白的問題。 */
   .quote-print-area{ display:none; }
   @media print{
+    html, body{ background:#fff !important; }
     body > *:not(.quote-print-area){ display:none !important; }
     .quote-print-area{
       display:block !important; position:static; margin:0; padding:0;
+      background:#fff !important;
       font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif; color:#1c1c1a;
     }
     @page{ size:A4; margin:18mm; }
