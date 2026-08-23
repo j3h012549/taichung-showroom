@@ -1275,4 +1275,52 @@
   .report-table tbody tr:last-child td{ border-bottom:none; }
   .report-table tr.report-subtotal td{ font-weight:700; background:var(--surface-2); }
   .report-wrap{ overflow-x:auto; }
+
+  /* ---------- 報價單列印／另存 PDF ----------
+     改成「印本頁隱藏區塊」而不是開新視窗＋Blob URL：
+     開新視窗那個做法在部分瀏覽器（尤其 macOS 上）用「另存為 PDF」時，
+     偶爾會存出一片空白的 PDF（推測是新視窗裡的內容還沒完全繪製完成，
+     系統列印/ 存 PDF 的那一刻就已經幫你把畫面「拍」下來了，導致存出來是空的）。
+     改成直接在目前這一頁準備好列印內容、平常完全隱藏，只有在「列印」的當下才顯示，
+     其餘畫面全部隱藏，這樣列印／另存 PDF 用的就是使用者當下已經看得到、確定畫完的內容，
+     不會再有「時機沒抓好」導致空白的問題。 */
+  .quote-print-area{ display:none; }
+  @media print{
+    body > *:not(.quote-print-area){ display:none !important; }
+    .quote-print-area{
+      display:block !important; position:static; margin:0; padding:0;
+      font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif; color:#1c1c1a;
+    }
+    @page{ size:A4; margin:18mm; }
+    .quote-print-area h1{ font-size:22px; letter-spacing:.15em; margin:0 0 8px; }
+    .quote-print-area .qp-brand-banner{
+      display:inline-block; font-size:16px; font-weight:700; color:#26424b;
+      background:#e4eef0; border-radius:6px; padding:4px 14px; margin:0 0 6px;
+    }
+    .quote-print-area .qp-sub{ color:#78766e; font-size:12.5px; margin:0 0 24px; }
+    .quote-print-area table.qp-info{ width:100%; border-collapse:collapse; margin-bottom:24px; }
+    .quote-print-area table.qp-info th, .quote-print-area table.qp-info td{
+      text-align:left; padding:8px; border-bottom:1px solid #ddd8cc; font-size:13.5px;
+    }
+    .quote-print-area table.qp-info th{ width:110px; color:#78766e; font-weight:600; white-space:nowrap; }
+    .quote-print-area table.qp-items{ width:100%; border-collapse:collapse; margin-bottom:10px; }
+    .quote-print-area table.qp-items th, .quote-print-area table.qp-items td{
+      text-align:left; padding:8px; border-bottom:1px solid #ddd8cc; font-size:13px;
+    }
+    .quote-print-area table.qp-items th{ color:#78766e; font-weight:600; font-size:11.5px; white-space:nowrap; }
+    .quote-print-area table.qp-items td.num, .quote-print-area table.qp-items th.num{
+      text-align:right; font-variant-numeric:tabular-nums;
+    }
+    .quote-print-area .qp-totals{ text-align:right; font-size:13.5px; color:#4a4844; margin-bottom:28px; }
+    .quote-print-area .qp-totals div{ margin-top:4px; }
+    .quote-print-area .qp-totals .grand{ font-size:18px; font-weight:700; color:#1c1c1a; margin-top:8px; }
+    .quote-print-area .qp-notes{
+      min-height:50px; white-space:pre-wrap; font-size:13px; border:1px solid #ddd8cc;
+      border-radius:6px; padding:10px; margin-bottom:32px;
+    }
+    .quote-print-area .qp-sign-grid{ display:flex; gap:40px; margin-top:48px; }
+    .quote-print-area .qp-sign-box{ flex:1; }
+    .quote-print-area .qp-sign-line{ border-bottom:1px solid #1c1c1a; height:46px; }
+    .quote-print-area .qp-sign-label{ font-size:12.5px; color:#78766e; margin-top:6px; }
+  }
   .report-empty{ color:var(--ink-faint); font-size:13px; padding:6px 0; }

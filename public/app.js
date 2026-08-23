@@ -826,7 +826,12 @@
     };
   }
 
-  /* ---------------- 報價單：開新視窗列印／另存為 PDF（不依賴任何外部套件） ---------------- */
+  /* ---------------- 報價單：列印／另存為 PDF（不依賴任何外部套件） ----------------
+     不開新視窗：改成把報價單內容放進本頁一個平常隱藏的區塊（#quotePrintArea），
+     只有在瀏覽器實際列印的當下（@media print）才顯示、其餘畫面全部隱藏。
+     這樣列印／另存 PDF 印的是目前這頁「已經確定畫好」的內容，
+     不會再遇到「開新視窗但內容還沒畫完就被存成 PDF」導致空白的狀況。 */
+  var quotePrintOriginalTitle = null;
   function openQuotePrintWindow(orderId, overrideData){
     var o = ordersData.filter(function(x){ return x.id === orderId; })[0];
     if(!o){ showToast("找不到這筆訂單"); return; }
@@ -853,60 +858,37 @@
       + "<div>稅金（" + t.taxRate + "%）　" + fmtMoney(t.tax) + "</div>"
       + "<div class=\"grand\">總計　" + fmtMoney(t.total) + "</div>";
     var html = ""
-      + "<!DOCTYPE html><html lang=\"zh-Hant\"><head><meta charset=\"utf-8\">"
-      + "<title>報價單－" + esc(o.brand || "") + "－" + esc(o.customerName || "") + "</title>"
-      + "<style>"
-      + "@page{ size:A4; margin:18mm; }"
-      + "body{ font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif; color:#1c1c1a; margin:0; padding:32px; }"
-      + "h1{ font-size:22px; letter-spacing:.15em; margin:0 0 8px; }"
-      + ".brand-banner{ display:inline-block; font-size:16px; font-weight:700; color:#26424b; background:#e4eef0; border-radius:6px; padding:4px 14px; margin:0 0 6px; }"
-      + ".sub{ color:#78766e; font-size:12.5px; margin:0 0 24px; }"
-      + "table.info{ width:100%; border-collapse:collapse; margin-bottom:24px; }"
-      + "table.info th, table.info td{ text-align:left; padding:8px 8px; border-bottom:1px solid #ddd8cc; font-size:13.5px; }"
-      + "table.info th{ width:110px; color:#78766e; font-weight:600; white-space:nowrap; }"
-      + "table.items{ width:100%; border-collapse:collapse; margin-bottom:10px; }"
-      + "table.items th, table.items td{ text-align:left; padding:8px 8px; border-bottom:1px solid #ddd8cc; font-size:13px; }"
-      + "table.items th{ color:#78766e; font-weight:600; font-size:11.5px; white-space:nowrap; }"
-      + "table.items td.num, table.items th.num{ text-align:right; font-variant-numeric:tabular-nums; }"
-      + ".totals{ text-align:right; font-size:13.5px; color:#4a4844; margin-bottom:28px; }"
-      + ".totals div{ margin-top:4px; }"
-      + ".totals .grand{ font-size:18px; font-weight:700; color:#1c1c1a; margin-top:8px; }"
-      + ".notes{ min-height:50px; white-space:pre-wrap; font-size:13px; border:1px solid #ddd8cc; border-radius:6px; padding:10px; margin-bottom:32px; }"
-      + ".sign-grid{ display:flex; gap:40px; margin-top:48px; }"
-      + ".sign-box{ flex:1; }"
-      + ".sign-line{ border-bottom:1px solid #1c1c1a; height:46px; }"
-      + ".sign-label{ font-size:12.5px; color:#78766e; margin-top:6px; }"
-      + ".print-bar{ text-align:right; margin-bottom:20px; }"
-      + ".print-bar button{ font-size:13px; padding:8px 18px; border-radius:8px; border:1px solid #3e6370; background:#e4eef0; color:#26424b; cursor:pointer; }"
-      + "@media print{ .print-bar{ display:none; } body{ padding:0; } }"
-      + "</style></head><body>"
-      + "<div class=\"print-bar\"><button onclick=\"window.print()\">列印／另存為 PDF</button></div>"
       + "<h1>報 價 單</h1>"
-      + "<div class=\"brand-banner\">" + esc(o.brand || "（未選擇品牌）") + "</div>"
-      + "<p class=\"sub\">製表日期　" + todayLabel + "</p>"
-      + "<table class=\"info\">"
+      + "<div class=\"qp-brand-banner\">" + esc(o.brand || "（未選擇品牌）") + "</div>"
+      + "<p class=\"qp-sub\">製表日期　" + todayLabel + "</p>"
+      + "<table class=\"qp-info\">"
       + "<tr><th>客戶姓名</th><td>" + esc(o.customerName || "") + "</td></tr>"
       + (o.customerPhone ? "<tr><th>客戶電話</th><td>" + esc(o.customerPhone) + "</td></tr>" : "")
       + "<tr><th>負責業務</th><td>" + esc(o.staffName || "") + "</td></tr>"
       + "<tr><th>預計成交日期</th><td>" + dealLabel + "</td></tr>"
       + "</table>"
-      + "<table class=\"items\"><thead><tr><th>項目</th><th>規格</th><th class=\"num\">單位</th><th class=\"num\">數量</th><th class=\"num\">單價</th><th class=\"num\">折扣</th><th class=\"num\">小計</th></tr></thead>"
+      + "<table class=\"qp-items\"><thead><tr><th>項目</th><th>規格</th><th class=\"num\">單位</th><th class=\"num\">數量</th><th class=\"num\">單價</th><th class=\"num\">折扣</th><th class=\"num\">小計</th></tr></thead>"
       + "<tbody>" + itemsRowsHtml + "</tbody></table>"
-      + "<div class=\"totals\">" + totalsHtml + "</div>"
-      + (o.notes ? "<div class=\"notes\">" + esc(o.notes) + "</div>" : "")
-      + "<div class=\"sign-grid\">"
-      + "<div class=\"sign-box\"><div class=\"sign-line\"></div><div class=\"sign-label\">客戶簽名　　　日期：＿＿＿＿＿＿</div></div>"
-      + "<div class=\"sign-box\"><div class=\"sign-line\"></div><div class=\"sign-label\">主管簽核　　　日期：＿＿＿＿＿＿</div></div>"
-      + "</div>"
-      + "</body></html>";
-    /* 用 Blob URL 開新視窗，避免部分瀏覽器（尤其 Safari）對 window.open("") 之後
-       再用 document.write 寫入內容的時機處理不穩定，導致列印出來是空白頁。 */
-    var blob = new Blob([html], { type: "text/html" });
-    var blobUrl = URL.createObjectURL(blob);
-    var win = window.open(blobUrl, "_blank");
-    if(!win){ showToast("瀏覽器擋下了新視窗，請允許本頁的彈出視窗後再試一次"); URL.revokeObjectURL(blobUrl); return; }
-    setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+      + "<div class=\"qp-totals\">" + totalsHtml + "</div>"
+      + (o.notes ? "<div class=\"qp-notes\">" + esc(o.notes) + "</div>" : "")
+      + "<div class=\"qp-sign-grid\">"
+      + "<div class=\"qp-sign-box\"><div class=\"qp-sign-line\"></div><div class=\"qp-sign-label\">客戶簽名　　　日期：＿＿＿＿＿＿</div></div>"
+      + "<div class=\"qp-sign-box\"><div class=\"qp-sign-line\"></div><div class=\"qp-sign-label\">主管簽核　　　日期：＿＿＿＿＿＿</div></div>"
+      + "</div>";
+    document.getElementById("quotePrintArea").innerHTML = html;
+    quotePrintOriginalTitle = document.title;
+    document.title = "報價單－" + (o.brand || "") + "－" + (o.customerName || "");
+    /* 等瀏覽器把剛剛塞進去的內容真正畫完一輪（下一個 frame）之後再列印，
+       比起塞進 innerHTML 之後立刻呼叫 print() 更保險。 */
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        window.print();
+      });
+    });
   }
+  window.addEventListener("afterprint", function(){
+    if(quotePrintOriginalTitle !== null){ document.title = quotePrintOriginalTitle; quotePrintOriginalTitle = null; }
+  });
 
   function updateOrderSummary(el, data){
     var f = calcOrderFinance(data);
@@ -1814,7 +1796,7 @@
   var ADMIN_VIEWS = ["orders","permissions"];
   var VIEW_TITLES = {
     calendar: { title:"展間預約行事曆", subtitle:"依日期檢視客人的預約與到訪安排" },
-    customers: { title:"展間客戶總覽", subtitle:"Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦" },
+    customers: { title:"台中綜合展間管理系統", subtitle:"Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦" },
     byBrand: { title:"各品牌客戶", subtitle:"選擇品牌，只看該品牌感興趣的客戶" },
     orders: { title:"案件管理", subtitle:"訂單／工程財務資料，含成本、毛利與業務抽成，僅管理員可見" },
     staff: { title:"業務管理", subtitle:"管理可指派的負責人員名單；抽成比例僅管理員看得到" },
