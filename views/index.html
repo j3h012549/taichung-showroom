@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>展間客戶總覽</title>
+<meta name="description" content="複合式展間客戶管理網頁：客人可自行現場登記或預約到訪時段，同仁登入後台可新增、編輯與指派負責人員，多人即時共用同步。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<body>
+
+<div id="frontDesk">
+  <div class="front-wrap">
+    <div class="front-card" id="frontCard" data-local-state="form" data-local-tab="checkin">
+      <div class="front-brands">Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦</div>
+      <h1>歡迎光臨</h1>
+      <p class="front-sub">現場登記讓顧問馬上為您服務，或先預約您方便的到訪時間</p>
+
+      <div class="front-tabs" role="tablist">
+        <button type="button" class="front-tab" id="tabCheckin" data-tab="checkin" role="tab" aria-selected="true">現場登記</button>
+        <button type="button" class="front-tab" id="tabAppointment" data-tab="appointment" role="tab" aria-selected="false">預約到訪</button>
+      </div>
+
+      <div class="front-form" data-tab-panel="checkin">
+        <div class="front-field">
+          <label>姓名 <span class="req">*</span></label>
+          <input type="text" id="fdName" placeholder="怎麼稱呼您">
+        </div>
+        <div class="front-field">
+          <label>聯絡電話 <span class="req">*</span></label>
+          <input type="tel" id="fdPhone" placeholder="方便聯絡的電話號碼">
+        </div>
+        <div class="front-field">
+          <label>Email（選填）</label>
+          <input type="email" id="fdEmail" placeholder="you@example.com">
+        </div>
+        <div class="front-field">
+          <label>感興趣的品牌（選填，可複選）</label>
+          <div class="front-brand-grid" id="fdBrandGrid"></div>
+        </div>
+        <div class="front-field">
+          <label>想了解的內容（選填）</label>
+          <input type="text" id="fdNotes" placeholder="例如：預算範圍、想看的商品">
+        </div>
+        <div class="front-error" id="fdError">請填寫姓名與聯絡電話</div>
+        <button type="button" class="front-submit" id="fdSubmit">送出資料</button>
+      </div>
+
+      <div class="front-form" data-tab-panel="appointment">
+        <div class="front-field">
+          <label>姓名 <span class="req">*</span></label>
+          <input type="text" id="apName" placeholder="怎麼稱呼您">
+        </div>
+        <div class="front-field">
+          <label>聯絡電話 <span class="req">*</span></label>
+          <input type="tel" id="apPhone" placeholder="方便聯絡的電話號碼">
+        </div>
+        <div class="front-field">
+          <label>Email（選填）</label>
+          <input type="email" id="apEmail" placeholder="you@example.com">
+        </div>
+        <div class="front-field">
+          <label>預約日期 <span class="req">*</span></label>
+          <input type="date" id="apDate">
+        </div>
+        <div class="front-field">
+          <label>預約時段 <span class="req">*</span></label>
+          <div class="front-slot-grid" id="apSlotGrid"></div>
+        </div>
+        <div class="front-field">
+          <label>感興趣的品牌（選填，可複選）</label>
+          <div class="front-brand-grid" id="apBrandGrid"></div>
+        </div>
+        <div class="front-field">
+          <label>想了解的內容（選填）</label>
+          <input type="text" id="apNotes" placeholder="例如：預算範圍、想看的商品">
+        </div>
+        <div class="front-error" id="apError">請填寫姓名、電話、預約日期與時段</div>
+        <button type="button" class="front-submit" id="apSubmit">送出預約</button>
+      </div>
+
+      <div class="front-thanks">
+        <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h2 id="thanksTitle">感謝您的填寫</h2>
+        <p id="thanksBody">我們的顧問將盡快與您聯繫</p>
+        <button type="button" class="front-again" id="fdAgain">填寫下一位</button>
+      </div>
+
+      <div class="front-staff">
+        <button type="button" class="front-staff-link" id="staffLinkBtn">登入後台</button>
+        <div class="staff-gate" id="staffGate">
+          <input type="text" id="staffUserInput" autocomplete="username" placeholder="帳號" maxlength="40">
+          <input type="password" id="staffPassInput" autocomplete="current-password" placeholder="密碼" maxlength="40">
+          <button type="button" class="confirm" id="staffCodeConfirm">登入</button>
+        </div>
+        <div class="staff-gate-error" id="staffGateError">帳號或密碼錯誤，請再試一次</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="backOffice">
+<div class="office-layout">
+
+  <nav class="side-nav" id="sideNav">
+    <button type="button" class="side-nav-btn" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>展間預約行事曆</span>
+    </button>
+    <button type="button" class="side-nav-btn" data-view="customers" aria-current="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>展間客戶總覽</span>
+    </button>
+    <button type="button" class="side-nav-btn" data-view="byBrand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l8.29-8.29a1 1 0 0 0 0-1.41L12 2Z"/><circle cx="7" cy="7" r="1"/></svg>
+      <span>各品牌客戶</span>
+    </button>
+    <button type="button" class="side-nav-btn" data-view="orders">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <span>案件管理</span>
+      <span class="lock-ico" id="ordersLockIco">🔒</span>
+    </button>
+    <button type="button" class="side-nav-btn" data-view="staff">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>業務管理</span>
+    </button>
+    <button type="button" class="side-nav-btn" data-view="permissions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>權限管理</span>
+      <span class="lock-ico" id="permissionsLockIco">🔒</span>
+    </button>
+  </nav>
+
+  <div class="office-main">
+  <div class="shell">
+
+  <div class="ro-banner" id="roBanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px;flex:none;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    <span id="roBannerText">尚未連接資料庫，客戶資料目前無法儲存。請依照隨附的設定說明建立免費的 Firebase 專案，並將設定值貼到 <code>index.html</code> 檔案最上方的 firebaseConfig 區塊。</span>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1 id="viewTitle">展間客戶總覽</h1>
+      <p id="viewSubtitle">Resmo・Pickme・Giorgio Graesan・沙發大師・睡眠王國・浴室整體規劃改造・Sigmas・震旦</p>
+      <div class="sync-chip"><span class="sync-dot off" id="syncDot"></span><span id="syncLabel">連線中…</span></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button type="button" class="btn-switch" id="btnToFront">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M5 12h14"/></svg>
+        顧客填寫頁
+      </button>
+    </div>
+  </div>
+
+  <div id="viewCalendar" style="display:none">
+    <div class="cal-header">
+      <button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="上個月">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2 id="calMonthLabel"></h2>
+      <button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="下個月">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <button type="button" class="cal-today-btn" id="calTodayBtn">今天</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="list-head">
+      <h2 id="calAgendaTitle">請選擇日期</h2>
+    </div>
+    <ul id="calAgendaList"></ul>
+    <div class="empty-state" id="calAgendaEmpty" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div>這天還沒有客人預約或安排到訪</div>
+    </div>
+  </div>
+
+  <div id="viewCustomers">
+
+  <div>
+    <div class="stats" id="statsRow">
+      <div class="stat-card" data-k="total"><div class="stat-num">0</div><div class="stat-label">客戶總數</div></div>
+      <div class="stat-card" data-k="scheduled"><div class="stat-num">0</div><div class="stat-label">已預約</div></div>
+      <div class="stat-card" data-k="following"><div class="stat-num">0</div><div class="stat-label">追蹤中</div></div>
+      <div class="stat-card" data-k="closed"><div class="stat-num">0</div><div class="stat-label">已成交</div></div>
+      <div class="stat-card" data-k="lost"><div class="stat-num">0</div><div class="stat-label">已流失</div></div>
+    </div>
+    <div class="brand-bars">
+      <h2>各品牌關注人數</h2>
+      <div id="brandBars"></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="搜尋姓名、電話…">
+    </div>
+    <div id="brandFilterChips"></div>
+    <div id="statusFilterChips"></div>
+    <div class="filter-more" id="staffFilterWrap">
+      <button type="button" class="filter-chip" id="staffFilterBtn" aria-pressed="false">負責人：全部</button>
+      <div class="filter-menu" id="staffFilterMenu"></div>
+    </div>
+  </div>
+
+  <div class="list-head">
+    <h2>客戶名單</h2>
+    <span class="list-count" id="listCount"></span>
+    <button type="button" class="btn-add" id="btnAddCustomer" style="margin-left:auto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增客戶
+    </button>
+  </div>
+  <ul id="customerList"></ul>
+  <div><div class="empty-state" id="emptyState" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <div>尚無客戶資料，點擊右上角「新增客戶」開始建立</div>
+  </div></div>
+
+  </div>
+
+  <div id="viewByBrand" style="display:none">
+    <div class="toolbar">
+      <select id="byBrandSelect" class="brand-select"></select>
+    </div>
+    <div class="list-head">
+      <h2>品牌客戶名單</h2>
+      <span class="list-count" id="byBrandCount"></span>
+    </div>
+    <ul id="byBrandList"></ul>
+    <div class="empty-state" id="byBrandEmptyState" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l8.29-8.29a1 1 0 0 0 0-1.41L12 2Z"/><circle cx="7" cy="7" r="1"/></svg>
+      <div>這個品牌目前還沒有客戶資料</div>
+    </div>
+  </div>
+
+  <div id="viewOrders" style="display:none">
+
+    <div class="fin-stats" id="finStatsRow">
+      <div class="stat-card" data-k="revenue"><div class="stat-num">0</div><div class="stat-label">本月營收</div></div>
+      <div class="stat-card" data-k="profit"><div class="stat-num">0</div><div class="stat-label">本月毛利</div></div>
+      <div class="stat-card" data-k="commission"><div class="stat-num">0</div><div class="stat-label">本月應付抽成</div></div>
+      <div class="stat-card" data-k="pending"><div class="stat-num">0</div><div class="stat-label">待領佣金（累計）</div></div>
+    </div>
+
+    <div class="order-toolbar">
+      <input type="month" id="orderMonthFilter">
+      <button type="button" class="filter-chip" id="orderShowAllBtn" aria-pressed="false">顯示全部月份</button>
+      <select id="orderBrandFilterSelect" class="brand-select"><option value="">全部品牌</option></select>
+      <button type="button" class="btn-add" id="btnAddOrder" style="margin-left:auto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新增訂單
+      </button>
+    </div>
+
+    <div class="list-head">
+      <h2>訂單／工程列表</h2>
+      <span class="list-count" id="orderListCount"></span>
+    </div>
+    <div class="order-table-wrap">
+      <table class="order-table" id="orderList">
+        <thead>
+          <tr>
+            <th>客戶</th><th>品牌</th><th>負責業務</th><th>成交日期</th><th>總價</th><th>成本</th>
+            <th>毛利</th><th>應付抽成</th><th>收款狀況</th><th>領款狀況</th><th>訂單狀態</th><th>備註</th><th></th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <div class="empty-state" id="orderEmptyState" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M8 3v18M3 9h18"/></svg>
+      <div>此範圍內尚無訂單，點擊右上角「新增訂單」開始建立</div>
+    </div>
+
+    <section class="panel" id="monthReportPanel" data-local-collapsed="false">
+      <div class="panel-head">
+        <div>
+          <h2>月報表（依成交日期、各品牌）</h2>
+          <div class="hint">營收／成本／毛利／應付抽成／已領・待領佣金</div>
+        </div>
+        <button type="button" class="panel-toggle" id="monthReportToggle" aria-label="展開／收合">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <div class="report-wrap" id="monthReportWrap"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="staffReportPanel" data-local-collapsed="false">
+      <div class="panel-head">
+        <div>
+          <h2>業務抽成總覽（累計，不受月份篩選影響）</h2>
+          <div class="hint">每位業務的成交總額／應得抽成／已領・待領佣金，方便對帳發薪</div>
+        </div>
+        <button type="button" class="panel-toggle" id="staffReportToggle" aria-label="展開／收合">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <div class="report-wrap" id="staffReportWrap"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="viewStaff" style="display:none">
+    <section class="panel" id="staffPanel" data-local-collapsed="false">
+      <div class="panel-head">
+        <div>
+          <h2>展間同仁</h2>
+          <div class="hint">管理可指派的負責人員名單；抽成比例僅管理者看得到</div>
+        </div>
+        <button type="button" class="panel-toggle" id="staffPanelToggle" aria-label="展開／收合">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="panel-body">
+        <p class="staff-empty" id="staffEmpty">尚未建立同仁名單，請於下方新增。</p>
+        <ul class="staff-list" id="staffList"></ul>
+        <div class="add-staff-form">
+          <input type="text" id="newStaffInput" placeholder="輸入同仁姓名，按 Enter 或新增">
+          <button type="button" id="addStaffBtn">新增同仁</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="viewPermissions" style="display:none">
+    <section class="panel">
+      <div class="panel-body" style="padding-top:18px">
+        <p class="hint" style="margin-bottom:14px">「操作人員」可進入客戶總覽、行事曆、各品牌客戶、業務管理（看不到抽成％數）；「管理員」還能額外看到案件管理（成本、毛利、業務抽成）與這個權限管理頁面。</p>
+        <div class="account-table-wrap">
+          <table class="account-table" id="accountTable">
+            <thead><tr><th>姓名</th><th>身份</th><th>帳號</th><th>密碼</th><th></th></tr></thead>
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+        <p class="account-empty" id="accountEmpty" style="display:none">尚無帳號，請於下方新增。</p>
+        <div class="add-account-form">
+          <input type="text" id="newAccName" placeholder="姓名">
+          <select id="newAccRole">
+            <option value="staff">操作人員</option>
+            <option value="admin">管理員</option>
+          </select>
+          <input type="text" id="newAccUser" placeholder="帳號">
+          <input type="text" id="newAccPass" placeholder="密碼">
+          <button type="button" id="addAccountBtn">新增帳號</button>
+        </div>
+        <p class="perm-hint">⚠️ 這是網頁前端的軟性防護，並不是正式的帳號登入機制（密碼是明碼存在資料庫裡），請避免使用其他重要帳號共用的密碼。修改後所有裝置會同步套用最新名單。</p>
+      </div>
+    </section>
+  </div>
+
+  <footer class="note"><span class="logged-in-as" id="loggedInAs"></span>所有欄位即時儲存；多位同仁同時開啟本頁會看到彼此的最新更新。　<button type="button" id="btnLogout" style="border:none;background:none;color:var(--ink-faint);text-decoration:underline;font-size:11.5px;cursor:pointer">在公用裝置使用後，點此登出後台</button>　<button type="button" id="btnAdminLogout" style="display:none;border:none;background:none;color:var(--ink-faint);text-decoration:underline;font-size:11.5px;cursor:pointer">登出管理員權限</button></footer>
+  </div>
+  </div>
+
+</div>
+</div>
+
+<div class="admin-gate-overlay" id="adminGate">
+  <div class="admin-gate-box" id="adminGateBox">
+    <h3>管理員權限</h3>
+    <p>訂單、成本、毛利與業務抽成僅管理員可見，請以管理員帳號登入</p>
+    <div class="row">
+      <input type="text" id="adminUserInput" autocomplete="username" placeholder="管理員帳號" maxlength="40">
+      <input type="password" id="adminPassInput" autocomplete="current-password" placeholder="密碼" maxlength="40">
+      <button type="button" class="confirm" id="adminCodeConfirm">進入</button>
+    </div>
+    <div class="admin-gate-error" id="adminGateError">帳號或密碼錯誤，請再試一次</div>
+    <button type="button" class="cancel" id="adminGateCancel">取消</button>
+  </div>
+</div>
+
+<div class="quote-modal-overlay" id="quoteModalOverlay">
+  <div class="quote-modal-box">
+    <div class="quote-modal-head">
+      <div>
+        <h3>報價單</h3>
+        <div class="quote-modal-context"><span id="quoteModalBrand"></span>　<span class="dim">客戶｜</span><span id="quoteModalCustomer"></span></div>
+      </div>
+      <button type="button" class="quote-modal-close" id="quoteModalCloseBtn" aria-label="關閉">&times;</button>
+    </div>
+    <div class="quote-modal-body">
+      <div class="quote-modal-table-wrap">
+        <table class="quote-modal-table">
+          <thead><tr><th>項目</th><th>規格</th><th>單位</th><th class="qm-num">數量</th><th class="qm-num">單價</th><th class="qm-num">折扣</th><th class="qm-num">小計</th><th></th></tr></thead>
+          <tbody id="quoteModalTbody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="quote-modal-add-row" id="quoteModalAddRowBtn">＋ 新增一行</button>
+      <div class="quote-modal-totals">
+        <div class="quote-tax-row"><span>稅率</span><input type="number" id="quoteModalTaxRate" min="0" max="100" step="0.1"><span>%</span></div>
+        <div>小計　<b id="quoteModalSubtotal">NT$0</b></div>
+        <div>稅金　<b id="quoteModalTax">NT$0</b></div>
+        <div class="grand">總計　<b id="quoteModalTotal">NT$0</b></div>
+      </div>
+    </div>
+    <div class="quote-modal-foot">
+      <button type="button" class="quote-modal-print" id="quoteModalPrintBtn">列印／另存為 PDF</button>
+      <button type="button" class="quote-modal-done" id="quoteModalDoneBtn">完成</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

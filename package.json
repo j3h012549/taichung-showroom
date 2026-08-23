@@ -1,0 +1,17 @@
+{
+  "name": "taichung-showroom",
+  "version": "1.0.0",
+  "description": "展間客戶總覽 — Node.js 後端版本（Express + SQLite）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0"
+  }
+}
